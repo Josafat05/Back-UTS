@@ -6,16 +6,24 @@ require('dotenv').config()
 const app = express()
 
 //Capturar el body
+
+//Conexion a la base de datos
+const url = `mongodb+srv://${process.env.USUARIO}:${process.env.PASSWORD}@cluster0.fhwsfjf.mongodb.net/${process.env.DBNAME}`
 app.use(bodyparser.urlencoded({
     extended: false
 }))
 app.use(bodyparser.json())
-
-//Conexion a la base de datos
+mongoose.connect(url, {
+    useNewUrlParser: true,
+    useUnifiedTopology: true
+}).then(() => console.log('Conectado a la base de datos!!'))
+.catch((error) => console.log('Error: '+ error))
 
 // Creacion e Importacion de Rutas
+const authRoutes = require('./routes/auth')
 
 //Ruta de middleware
+app.use('/api/user', authRoutes)
 
 //Ruta raíz
 app.get('/', (req, res) => {
