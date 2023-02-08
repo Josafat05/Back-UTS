@@ -1,5 +1,4 @@
 const router = require('express').Router()
-const { request } = require('express')
 const User = require('../models/User')
 const Joi = require('@hapi/joi')
 const bcrypt = require('bcrypt')
@@ -11,30 +10,29 @@ const schemaRegister = Joi.object({
     email: Joi.string().max(1024).required(),
     password: Joi.string().min(6).required()
 })
-
 const schemaLogin = Joi.object({
     email: Joi.string().max(1024).required(),
     password: Joi.string().min(6).required()
 })
-
 const schemaUpdate = Joi.object({
-    name: Joi.string().max(255).required(),
+    id: Joi.string().max(1024).required(),
+    name: Joi.string().min(6).max(255).required(),
     lastname: Joi.string().max(255).required(),
     email: Joi.string().max(1024).required(),
     password: Joi.string().min(6).required()
 })
 
-router.post('/register', async(req, res) => {
-    //validacion de usuario
-    const { error } = schemaRegister.validate(req.body)
-    if (error) {
-        return res.status(400).json({
+router.post('/registre', async(req, res) => {
+    //Validacion de usuario
+    const { error } = schemaRegister.validate(req.body) 
+    if(error){
+       return res.status(400).json({
             error: error.details[0].message
         })
     }
 
-    const isEmailUnique = await User.findOne({ email: req.body.email })
-    if (isEmailUnique){
+    const isEmailUnique = await User.findOne({email: req.body.email})
+    if (isEmailUnique) {
         return res.status(400).json({
             error: "El correo ya existe"
         })
@@ -47,80 +45,81 @@ router.post('/register', async(req, res) => {
         name: req.body.name,
         lastname: req.body.lastname,
         email: req.body.email,
-        password: passwordEncriptado,
+        password: passwordEncriptado, 
     })
 
-    try{
-        const guardado = await usuario.save()
-        res.json({
-            message: 'Success',
-            data: guardado
-        })
-    } catch (error){
+    try {
+       const guardado = await usuario.save()
+       res.json({
+        message: 'Success',
+        data: guardado
+       })
+    } catch (error) {
         res.status(400).json({
-            message: 'Error al Guardar',
+            message: 'Error al guardar',
             error
         })
     }
 })
 
-router.post('/login', async(req, res) =>{
-    const { error } = schemaLogin.validate(req.body)
-    if(error) {
-        return res.status(400).json({
+router.post('/login', async(req, res)=> {
+    //login de usuario
+    const { error } = schemaLogin.validate(req.body) 
+    if(error){
+       return res.status(400).json({
             error: error.details[0].message
         })
     }
 
-    const isEmailUnique = await User.findOne({ email: req.body.email })
-    if (!isEmailUnique){
+    const isEmailUnique = await User.findOne({email: req.body.email})
+    if (!isEmailUnique) {
         return res.status(400).json({
             error: "El correo no existe"
         })
     }
 
     const validPassword = await bcrypt.compare(req.body.password, isEmailUnique.password)
-    if(!validPassword){
+    if (!validPassword) {
         return res.status(400).json({
-            error: "Password incorrecto"
+            error: "Password Incorrecto"
         })
     }
 
     const token = Jwt.sign({
         name: isEmailUnique.name,
-        id: isEmailUnique._id
-    },process.env.TOKEN_SECRET)
+        id: isEmailUnique.id
+    }, process.env.TOKEN_SECRET)
 
     res.header('auth-token', token).json({
         error: null,
-        data: {token}
+        data: { token }
     })
 })
 
-router.get('/getallusers', async (req, res)=>{
+router.get('/getallusers', async(req, res) => {
     const users = await User.find()
 
-    if(users){
+    if (users){
         res.json({
-            error:null,
+            error: null,
             data: users
         })
     }else{
         return res.status(400).json({
-            error: "No se encontraron usuarios"
+            error: "No hay usuarios"
         })
     }
 })
 
-router.post('/eraseuser', async (req, res) =>{
+router.post('/erauser', async(req, res) => {
     const id = req.body.id
 
     const erased = await User.findByIdAndDelete(id)
 
-    if (erased){
+    if (erased) {
         res.json({
             error: null,
-            message: "Borrado de manera correcta"
+            message: "Borrado Satisfactoriamente"
         })
     }else{
         return res.status(400).json({
@@ -129,19 +128,19 @@ router.post('/eraseuser', async (req, res) =>{
     }
 })
 
-router.post('/register', async(req, res) => {
-    //validacion de usuario
-    const { error } = schemaRegister.validate(req.body)
-    if (error) {
-        return res.status(400).json({
+router.post('/updateuser', async(req, res) => {
+    //Validacion de usuario
+    const { error } = schemaUpdate.validate(req.body) 
+    if(error){
+       return res.status(400).json({
             error: error.details[0].message
         })
     }
 
-    const isEmailUnique = await User.findOne({ email: req.body.email })
-    if (isEmailUnique){
+    const isEmailUnique = await User.findOne({email: req.body.email})
+    if (isEmailUnique) {
         return res.status(400).json({
-            error: "El correo ya existe, no podemos cambiar el usuario"
+            error: "El correo ya existe no podemos actualizar el usuario"
         })
     }
 
@@ -152,16 +151,21 @@ router.post('/register', async(req, res) => {
         name: req.body.name,
         lastname: req.body.lastname,
         email: req.body.email,
-        password: passwordEncriptado,
+        password: passwordEncriptado, 
     }
 
-    try{
-        const actualizado = await User.findByIdAndUpdate(res.body.id, usuario, {new: true})
-        })
-    } atch (error){
+    try {
+       const actualizado = await User.findByIdAndUpdate(req.body.id, usuario, {new: true})
+       res.json({
+        message: 'Success Update',
+        data: actualizado
+       })
+    } catch (error) {
         res.status(400).json({
-            message: 'Error al actualizar',
+            message: 'Error al Actualizar',
             error
         })
     }
 })
+
+module.exports = router
